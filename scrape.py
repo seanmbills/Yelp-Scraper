@@ -21,7 +21,8 @@ class Window(tk.Frame):
 
         self.v = tk.StringVar()
         # creates the field to ouput the text of the search results to
-        self.outputText = tk.Text(self, state='disabled', text = self.v)
+        self.outputText = tk.Text(self)
+        self.outputText.config(state='disabled')
         # creates a button to clear the entry fields
         self.clearButton = tk.Button(self, text = "CLEAR", command = self.clear)
 
@@ -55,15 +56,21 @@ class Window(tk.Frame):
             result += self.locationEntry.get()
             location = self.locationEntry.get()
         if not location == "" and not search == "":
+            self.setText("")
             self.search(search, location, counter)
 
     def setText(self, word):
+        self.outputText.configure(state='normal')
+        self.outputText.delete('1.0', tk.END)
+        self.v.set("")
         self.v.set(word)
+        self.outputText.insert('1.0', self.v.get())
+        self.outputText.configure(state='disabled')
 
     def clear(self):
         self.locationEntry.delete(0, tk.END)
         self.searchEntry.delete(0, tk.END)
-        self.outputText.config(text="")
+        self.setText("")
 
     def search(self, searchQuery, locationQuery, counter):
         search = searchQuery
@@ -93,13 +100,16 @@ class Window(tk.Frame):
             address = item.find('address').text
             number = item.find('span', attrs={'class': 'biz-phone'}).text
             outString += "Name: " + name + "\n\t\t\tAddress: " + address + "\n\t\t\tPhone Number: " + number + "\n"
-            print(outString)
-            write_file.write("Name: " + name.replace(u"\u2019", "'").replace(u"\u2018", "'") + "</br>" + "Address: "
+            # print(outString)
+            write_file.write("Name: " + name.replace(u"\u2019", "'").replace("amp;", "&").replace(u"\u2018", "'") + "</br>" + "Address: "
                 + address.replace(u"\u2019", "'").replace(u"\u2018", "'") + "</br>" + "Phone Number: " + number.replace(u"\u2019", "'").replace(u"\u2018", "'") + "</br>")
         write_file.close()
 
+        print(outString)
+
+        self.setText(outString)
         # write th results to the output text location on the frame as well
-        self.outputText.config(text = outString)
+        self.outputText.insert('end', self.v.get())
 
 
 def center(win):
