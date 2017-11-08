@@ -120,7 +120,9 @@ class Window(tk.Frame):
         query = 'https://www.yelp.com/search?find_desc='+search+'&find_loc='+location+'&start='+str(0)
 
         response = requests.get(query)
+        print(response)
         html = response.content
+        print(html)
         
         updated_location = ", ".join(w.capitalize() for w in location.split(", "))
         print(updated_location)
@@ -152,9 +154,11 @@ class Window(tk.Frame):
 
         outString = ""
 
-        total_results = 0
+        numResults = 0
 
         write_file = open('query_results.html', 'w')
+
+        locationList = {}
 
         for i in range(counter):
             query = 'https://www.yelp.com/search?find_desc='+search+'&find_loc='+location+'&start='+str(i)
@@ -196,20 +200,31 @@ class Window(tk.Frame):
                     
                     if name is not None and address is not None and number is not None and currPrice is not None and currentIterationPrice <= price_comparator and currRating is not None and rating_comparator is True:
                         city_name_location = address.find(city_name)
+
+                        locationList[name].append([(address, number, currPrice, ratingNumber)])
+
                         address = address[:city_name_location] + "\n\t\t\t\t " + address[city_name_location:]
-                        outString += "Name: " + name + "\n\t\t\tAddress: " + address + "\n\t\t\tPhone Number: " + number + "\n"
+                        outString += "Name: " + name.replace("amp;", "") + "\n\t\t\tAddress: " + address + "\n\t\t\tPhone Number: " + number + "\n"
                         outString = outString.replace("&amp;", "&")
                         write_file.write("Name: " + name.replace(u"\u2019", "'").replace("amp;", "&").replace(u"\u2018", "'") + "</br>" + "Address: "
                             + address.replace(u"\u2019", "'").replace(u"\u2018", "'") + "</br>" + "Phone Number: "
                             + number.replace(u"\u2019", "'").replace(u"\u2018", "'") + "</br>")
 
-                        total_results += 1
+                        numResults += 1
             
+
+
         write_file.close()
+        totalPlace = 0
+        for name in locationList:
+            print(name)
+            for locations in locationList[name]:
+                print(locations)
+                totalPlace += 1
+        print("Location list size: " + str(totalPlace))
+        # print("Output: " + outString)
 
-        print("Output: " + outString)
-
-        print("Total Results: " + str(total_results))
+        # print("Total Results: " + str(total_results))
 
         self.setText(outString)
         # write th results to the output text location on the frame as well
