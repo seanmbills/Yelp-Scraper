@@ -1,7 +1,5 @@
 import requests
 from BeautifulSoup import BeautifulSoup
-import lxml.html
-import urllib
 import os
 import Tkinter as tk
 
@@ -120,9 +118,9 @@ class Window(tk.Frame):
         query = 'https://www.yelp.com/search?find_desc='+search+'&find_loc='+location+'&start='+str(0)
 
         response = requests.get(query)
-        print(response)
+        # print(response)
         html = response.content
-        print(html)
+        # print(html)
         
         updated_location = ", ".join(w.capitalize() for w in location.split(", "))
         print(updated_location)
@@ -175,6 +173,7 @@ class Window(tk.Frame):
                     name = item.find('a', attrs={'class': 'biz-name js-analytics-click'})
                     if name is not None:
                         name = name.text
+                        name.replace(u"\u2019", "'").replace("amp;", "").replace(u"\u2018", "'")
                     address = item.find('address')
                     if address is not None:
                         address = address.text
@@ -201,7 +200,10 @@ class Window(tk.Frame):
                     if name is not None and address is not None and number is not None and currPrice is not None and currentIterationPrice <= price_comparator and currRating is not None and rating_comparator is True:
                         city_name_location = address.find(city_name)
 
-                        locationList[name].append([(address, number, currPrice, ratingNumber)])
+                        if name not in locationList:
+                            locationList[name] = [(address, number, currentIterationPrice, ratingNumber)]
+                        else:
+                            locationList[name].append([(address, number, currentIterationPrice, ratingNumber)])
 
                         address = address[:city_name_location] + "\n\t\t\t\t " + address[city_name_location:]
                         outString += "Name: " + name.replace("amp;", "") + "\n\t\t\tAddress: " + address + "\n\t\t\tPhone Number: " + number + "\n"
