@@ -130,15 +130,12 @@ class Window(tk.Frame):
         query = 'https://www.yelp.com/search?find_desc='+search+'&find_loc='+location+'&start='+str(0)
 
         response = requests.get(query)
-<<<<<<< HEAD
         ##print(response)
         html = response.content
         ##print(html)
-=======
         # print(response)
         html = response.content
         # print(html)
->>>>>>> f2ed44546387042e9de14171f2d90ad90d72d6a3
         
         updated_location = ", ".join(w.capitalize() for w in location.split(", "))
         ##print(updated_location)
