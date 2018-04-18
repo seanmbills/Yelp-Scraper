@@ -218,7 +218,6 @@ class Window(tk.Frame):
 
                     currentIterationPrice = self.calculatePrice(currPrice)
                     
-                    # adding in a comment to check that the Development branch is set up appropriately
 
                     if name is not None and address is not None and number is not None and currPrice is not None and currentIterationPrice <= price_comparator and currRating is not None and rating_comparator is True:
                         city_name_location = address.find(city_name)
@@ -232,12 +231,9 @@ class Window(tk.Frame):
                         # else:
                         #     locationList[name] = [(address, number, currPrice, ratingNumber)]
                         modified_address = address[:city_name_location] + " " + address[city_name_location:]
-                        locationList.append((name, modified_address))
-                        # if name not in locationList:
-                        #     locationList[name] = [(address, number, currentIterationPrice, ratingNumber)]
-                        # else:
-                        #     locationList[name].append([(address, number, currentIterationPrice, ratingNumber)])
-
+                        if (name, modified_address) not in locationList:
+                            locationList.append((name, modified_address))
+                        
                         address = address[:city_name_location] + "\n\t\t\t\t " + address[city_name_location:]
                         outString += "Name: " + name.replace("&amp;", "") + "\n\t\t\tAddress: " + address + "\n\t\t\tPhone Number: " + number + "\n"
                         outString = outString.replace("&amp;", "&")
@@ -247,6 +243,7 @@ class Window(tk.Frame):
 
                         numResults += 1
 
+        print(locationList)
 
         ## calculate the distance matrix for all locations using GoogleMaps API
         self.getDistanceMatrix(locationList)
@@ -304,21 +301,6 @@ class Window(tk.Frame):
 
 
     def getDistanceMatrix(self, locations):
-        # geolocator = Nominatim()
-        # ## generate all lat/long pairings for all locations in the list
-        # ## using geopy module
-        # geocodedLocations = []
-        # for location in locations:
-        #     geoLocation = geolocator.geocode(location)
-        #     latitude = geoLocation.latitude
-        #     longitude = geoLocation.longitude
-        #     coordinates = (latitude, longitude)
-        #     geocodedLocations.append(coordinates)
-
-        # ## generate a distance matrix for all locations to one another
-        # ## using the googlemaps api
-        # gmaps = googlemaps.Client(key='AIzaSyAc7fp_XeF0dg74i1B-XH4NU_QAwNfTxEk')
-
         # instantiate geocoder entity
         geo = Nominatim(timeout=None)
 
@@ -326,6 +308,7 @@ class Window(tk.Frame):
         locationCoordinates = ""
         latLong = []
         reverseLongLat = []
+        # iterate through all of the locations we've found in the scraping elsewhere
         for location in locations:
             print("Location: " + location[1])
             loc = geo.geocode(location[1])
@@ -335,6 +318,7 @@ class Window(tk.Frame):
                 latLong.append((loc.latitude, loc.longitude))
                 reverseLongLat.append((loc.longitude, loc.latitude))
 
+        # add the coordinates to our requests curl string so we can use them in the API hit
         for x in range(len(reverseLongLat)):
             pair = reverseLongLat[x]
             if x != (len(reverseLongLat) - 1):
@@ -342,8 +326,9 @@ class Window(tk.Frame):
             else:
                 locationCoordinates += str(pair[0]) + "," + str(pair[1])
 
+        # update the curl string
         curl += locationCoordinates
-
+        # call the API
         response = requests.get(curl).json()
 
         print(response)
