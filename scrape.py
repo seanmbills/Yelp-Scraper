@@ -1,9 +1,18 @@
 import requests
-from BeautifulSoup import BeautifulSoup
 import lxml.html
 import urllib
 import os
-import Tkinter as tk
+from geopy.geocoders import Nominatim
+import time
+##import googlemaps
+##import osrm
+
+try:
+    import Tkinter as tk
+    from BeautifulSoup import BeautifulSoup
+except ImportError:
+    import tkinter as tk
+    from bs4 import BeautifulSoup
 
 
 class Window(tk.Frame):
@@ -120,18 +129,18 @@ class Window(tk.Frame):
         query = 'https://www.yelp.com/search?find_desc='+search+'&find_loc='+location+'&start='+str(0)
 
         response = requests.get(query)
-        print(response)
+        ##print(response)
         html = response.content
-        print(html)
+        ##print(html)
         
         updated_location = ", ".join(w.capitalize() for w in location.split(", "))
-        print(updated_location)
+        ##print(updated_location)
         if updated_location.find(",") != -1:
             city_name = updated_location[:updated_location.find(",")]
             state_name = updated_location[updated_location.find(",") + 2:]
         else:
             city_name = updated_location #[:updated_location.find(",")]
-            print(self.checkStates(city_name))
+            ##print(self.checkStates(city_name))
 
         ## convert price $$$ numbers into actual numbers for comparison below  
         # print(price)      
@@ -158,7 +167,11 @@ class Window(tk.Frame):
 
         write_file = open('query_results.html', 'w')
 
-        locationList = {}
+        # locationList = {}
+        locationList = []
+
+        ### DELETE THIS LATER!!!! ONLY ADDED THIS TO REDUCE SCRAPING TIME FOR DEBUGGING
+        counter = 5
 
         for i in range(counter):
             query = 'https://www.yelp.com/search?find_desc='+search+'&find_loc='+location+'&start='+str(i)
@@ -175,6 +188,7 @@ class Window(tk.Frame):
                     name = item.find('a', attrs={'class': 'biz-name js-analytics-click'})
                     if name is not None:
                         name = name.text
+                        ##print("Name: " + name)
                     address = item.find('address')
                     if address is not None:
                         address = address.text
@@ -187,10 +201,11 @@ class Window(tk.Frame):
                     
                     currRating = item.find('img', attrs={'class': 'offscreen'})
 
+
                     ratingNumber = 0
                     if currRating is not None:
                         currRating = currRating['alt']
-                        currRating = currRating.encode('ascii')
+                        ##currRating = currRating.encode('ascii')
                         index_decimal = currRating.find(".")
                         ratingNumber = float(currRating[index_decimal - 1 : index_decimal + 2])
 
@@ -201,25 +216,36 @@ class Window(tk.Frame):
                     if name is not None and address is not None and number is not None and currPrice is not None and currentIterationPrice <= price_comparator and currRating is not None and rating_comparator is True:
                         city_name_location = address.find(city_name)
 
-                        locationList[name].append([(address, number, currPrice, ratingNumber)])
+                        name = str(name.replace(u"\u2019", "'").replace("&amp;", "&").replace(u"\u2018", "'"))
+                        address = str(address.replace(u"\u2019", "'").replace(u"\u2018", "'"))
+                        number = str(number.replace(u"\u2019", "'").replace(u"\u2018", "'"))
+
+                        # if name in locationList.keys():
+                        #     locationList[name].append((address, number, currPrice, ratingNumber))
+                        # else:
+                        #     locationList[name] = [(address, number, currPrice, ratingNumber)]
+                        modified_address = address[:city_name_location] + " " + address[city_name_location:]
+                        locationList.append((name, modified_address))
 
                         address = address[:city_name_location] + "\n\t\t\t\t " + address[city_name_location:]
-                        outString += "Name: " + name.replace("amp;", "") + "\n\t\t\tAddress: " + address + "\n\t\t\tPhone Number: " + number + "\n"
+                        outString += "Name: " + name.replace("&amp;", "") + "\n\t\t\tAddress: " + address + "\n\t\t\tPhone Number: " + number + "\n"
                         outString = outString.replace("&amp;", "&")
-                        write_file.write("Name: " + name.replace(u"\u2019", "'").replace("amp;", "&").replace(u"\u2018", "'") + "</br>" + "Address: "
+                        write_file.write("Name: " + name.replace(u"\u2019", "'").replace("&amp;", "&").replace(u"\u2018", "'") + "</br>" + "Address: "
                             + address.replace(u"\u2019", "'").replace(u"\u2018", "'") + "</br>" + "Phone Number: "
                             + number.replace(u"\u2019", "'").replace(u"\u2018", "'") + "</br>")
 
                         numResults += 1
-            
 
+
+        ## calculate the distance matrix for all locations using GoogleMaps API
+        self.getDistanceMatrix(locationList)
 
         write_file.close()
         totalPlace = 0
         for name in locationList:
-            print(name)
-            for locations in locationList[name]:
-                print(locations)
+            ##print(name)
+            # for locations in locationList[name]:
+                ##print(locations)
                 totalPlace += 1
         print("Location list size: " + str(totalPlace))
         # print("Output: " + outString)
@@ -264,6 +290,53 @@ class Window(tk.Frame):
             return 3
         elif price == "$$$$":
             return 4
+
+
+    def getDistanceMatrix(self, locations):
+        # geolocator = Nominatim()
+        # ## generate all lat/long pairings for all locations in the list
+        # ## using geopy module
+        # geocodedLocations = []
+        # for location in locations:
+        #     geoLocation = geolocator.geocode(location)
+        #     latitude = geoLocation.latitude
+        #     longitude = geoLocation.longitude
+        #     coordinates = (latitude, longitude)
+        #     geocodedLocations.append(coordinates)
+
+        # ## generate a distance matrix for all locations to one another
+        # ## using the googlemaps api
+        # gmaps = googlemaps.Client(key='AIzaSyAc7fp_XeF0dg74i1B-XH4NU_QAwNfTxEk')
+
+        # instantiate geocoder entity
+        geo = Nominatim(timeout=None)
+
+        curl = 'http://router.project-osrm.org/table/v1/walking/'
+        locationCoordinates = ""
+        latLong = []
+        reverseLongLat = []
+        for location in locations:
+            print("Location: " + location[1])
+            loc = geo.geocode(location[1])
+            time.sleep(1)
+            if loc is not None:
+                print("Coordinates: " + str(loc.latitude) + ", " + str(loc.longitude))
+                latLong.append((loc.latitude, loc.longitude))
+                reverseLongLat.append((loc.longitude, loc.latitude))
+
+        for x in range(len(reverseLongLat)):
+            pair = reverseLongLat[x]
+            if x != (len(reverseLongLat) - 1):
+                locationCoordinates += str(pair[0]) + "," + str(pair[1]) + ";"
+            else:
+                locationCoordinates += str(pair[0]) + "," + str(pair[1])
+
+        curl += locationCoordinates
+
+        response = requests.get(curl).json()
+
+        print(response)
+        
 
 
 def center(win):
