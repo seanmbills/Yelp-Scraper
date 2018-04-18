@@ -218,6 +218,8 @@ class Window(tk.Frame):
 
                     currentIterationPrice = self.calculatePrice(currPrice)
                     
+                    # adding in a comment to check that the Development branch is set up appropriately
+
                     if name is not None and address is not None and number is not None and currPrice is not None and currentIterationPrice <= price_comparator and currRating is not None and rating_comparator is True:
                         city_name_location = address.find(city_name)
 
