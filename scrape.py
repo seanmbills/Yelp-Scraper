@@ -231,11 +231,16 @@ class Window(tk.Frame):
                         # else:
                         #     locationList[name] = [(address, number, currPrice, ratingNumber)]
                         modified_address = address[:city_name_location] + " " + address[city_name_location:]
-                        if (name, modified_address) not in locationList:
-                            locationList.append((name, modified_address))
+                        
+                        # modify the collected information to not include white spaces
+                        modified_address = modified_address.replace("\n", "").strip()
+                        name = name.strip().replace("\n", "")
+                        number = number.strip().replace("\n", "")
+                        
+                        locationList.append((name, modified_address))
                         
                         address = address[:city_name_location] + "\n\t\t\t\t " + address[city_name_location:]
-                        outString += "Name: " + name.replace("&amp;", "") + "\n\t\t\tAddress: " + address + "\n\t\t\tPhone Number: " + number + "\n"
+                        outString += "Name: " + name.replace("&amp;", "") + "\n\t\t\tAddress: " + modified_address + "\n\t\t\tPhone Number: " + number + "\n"
                         outString = outString.replace("&amp;", "&")
                         write_file.write("Name: " + name.replace(u"\u2019", "'").replace("&amp;", "&").replace(u"\u2018", "'") + "</br>" + "Address: "
                             + address.replace(u"\u2019", "'").replace(u"\u2018", "'") + "</br>" + "Phone Number: "
@@ -315,9 +320,11 @@ class Window(tk.Frame):
             time.sleep(1)
             if loc is not None:
                 print("Coordinates: " + str(loc.latitude) + ", " + str(loc.longitude))
-                latLong.append((loc.latitude, loc.longitude))
-                reverseLongLat.append((loc.longitude, loc.latitude))
+                if (loc.latitude, loc.longitude) not in latLong:
+                    latLong.append((loc.latitude, loc.longitude))
+                    reverseLongLat.append((loc.longitude, loc.latitude))
 
+        print(latLong)
         # add the coordinates to our requests curl string so we can use them in the API hit
         for x in range(len(reverseLongLat)):
             pair = reverseLongLat[x]
