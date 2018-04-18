@@ -1,6 +1,10 @@
 import requests
+<<<<<<< HEAD
 import lxml.html
 import urllib
+=======
+from BeautifulSoup import BeautifulSoup
+>>>>>>> f2ed44546387042e9de14171f2d90ad90d72d6a3
 import os
 from geopy.geocoders import Nominatim
 import time
@@ -129,9 +133,15 @@ class Window(tk.Frame):
         query = 'https://www.yelp.com/search?find_desc='+search+'&find_loc='+location+'&start='+str(0)
 
         response = requests.get(query)
+<<<<<<< HEAD
         ##print(response)
         html = response.content
         ##print(html)
+=======
+        # print(response)
+        html = response.content
+        # print(html)
+>>>>>>> f2ed44546387042e9de14171f2d90ad90d72d6a3
         
         updated_location = ", ".join(w.capitalize() for w in location.split(", "))
         ##print(updated_location)
@@ -188,7 +198,11 @@ class Window(tk.Frame):
                     name = item.find('a', attrs={'class': 'biz-name js-analytics-click'})
                     if name is not None:
                         name = name.text
+<<<<<<< HEAD
                         ##print("Name: " + name)
+=======
+                        name.replace(u"\u2019", "'").replace("amp;", "").replace(u"\u2018", "'")
+>>>>>>> f2ed44546387042e9de14171f2d90ad90d72d6a3
                     address = item.find('address')
                     if address is not None:
                         address = address.text
@@ -216,6 +230,7 @@ class Window(tk.Frame):
                     if name is not None and address is not None and number is not None and currPrice is not None and currentIterationPrice <= price_comparator and currRating is not None and rating_comparator is True:
                         city_name_location = address.find(city_name)
 
+<<<<<<< HEAD
                         name = str(name.replace(u"\u2019", "'").replace("&amp;", "&").replace(u"\u2018", "'"))
                         address = str(address.replace(u"\u2019", "'").replace(u"\u2018", "'"))
                         number = str(number.replace(u"\u2019", "'").replace(u"\u2018", "'"))
@@ -226,6 +241,12 @@ class Window(tk.Frame):
                         #     locationList[name] = [(address, number, currPrice, ratingNumber)]
                         modified_address = address[:city_name_location] + " " + address[city_name_location:]
                         locationList.append((name, modified_address))
+=======
+                        if name not in locationList:
+                            locationList[name] = [(address, number, currentIterationPrice, ratingNumber)]
+                        else:
+                            locationList[name].append([(address, number, currentIterationPrice, ratingNumber)])
+>>>>>>> f2ed44546387042e9de14171f2d90ad90d72d6a3
 
                         address = address[:city_name_location] + "\n\t\t\t\t " + address[city_name_location:]
                         outString += "Name: " + name.replace("&amp;", "") + "\n\t\t\tAddress: " + address + "\n\t\t\tPhone Number: " + number + "\n"
