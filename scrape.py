@@ -231,10 +231,10 @@ class Window(tk.Frame):
                         #     locationList[name] = [(address, number, currPrice, ratingNumber)]
                         modified_address = address[:city_name_location] + " " + address[city_name_location:]
                         locationList.append((name, modified_address))
-                        if name not in locationList:
-                            locationList[name] = [(address, number, currentIterationPrice, ratingNumber)]
-                        else:
-                            locationList[name].append([(address, number, currentIterationPrice, ratingNumber)])
+                        # if name not in locationList:
+                        #     locationList[name] = [(address, number, currentIterationPrice, ratingNumber)]
+                        # else:
+                        #     locationList[name].append([(address, number, currentIterationPrice, ratingNumber)])
 
                         address = address[:city_name_location] + "\n\t\t\t\t " + address[city_name_location:]
                         outString += "Name: " + name.replace("&amp;", "") + "\n\t\t\tAddress: " + address + "\n\t\t\tPhone Number: " + number + "\n"
