@@ -1,10 +1,7 @@
 import requests
-<<<<<<< HEAD
 import lxml.html
 import urllib
-=======
 from BeautifulSoup import BeautifulSoup
->>>>>>> f2ed44546387042e9de14171f2d90ad90d72d6a3
 import os
 from geopy.geocoders import Nominatim
 import time
@@ -235,7 +232,7 @@ class Window(tk.Frame):
                         #     locationList[name] = [(address, number, currPrice, ratingNumber)]
                         modified_address = address[:city_name_location] + " " + address[city_name_location:]
                         locationList.append((name, modified_address))
-                        
+
                         if name not in locationList:
                             locationList[name] = [(address, number, currentIterationPrice, ratingNumber)]
                         else:
