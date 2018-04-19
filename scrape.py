@@ -318,30 +318,27 @@ class Window(tk.Frame):
         reverseLongLat = []
         # iterate through all of the locations we've found in the scraping elsewhere
         for location in locations:
-            print("Location: " + location[1])
+            # print("Location: " + location[1])
             loc = geo.geocode(location[1])
             time.sleep(1)
             if loc is not None:
-                print("Coordinates: " + str(loc.latitude) + ", " + str(loc.longitude))
+                # print("Coordinates: " + str(loc.latitude) + ", " + str(loc.longitude))
                 if (loc.latitude, loc.longitude) not in latLong:
                     latLong.append((loc.latitude, loc.longitude))
                     reverseLongLat.append((loc.longitude, loc.latitude))
 
-        print(reverseLongLat)
         # add the coordinates to our requests curl string so we can use them in the API hit
-        for x in range(len(reverseLongLat)):
-            pair = reverseLongLat[x]
-            if x != (len(reverseLongLat) - 1):
-                locationCoordinates += str(pair[0]) + "," + str(pair[1]) + ";"
-            else:
-                locationCoordinates += str(pair[0]) + "," + str(pair[1])
+        # for x in range(len(reverseLongLat)):
+        #     pair = reverseLongLat[x]
+        #     if x != (len(reverseLongLat) - 1):
+        #         locationCoordinates += str(pair[0]) + "," + str(pair[1]) + ";"
+        #     else:
+        #         locationCoordinates += str(pair[0]) + "," + str(pair[1])
 
-        line = polyline.encode(reverseLongLat, 10)
-        print("Encoded: " + line)
+        line = polyline.encode(latLong, 5)
 
-        print("Decoded: " + str(polyline.decode(line, 10)))
         # update the curl string
-        curl += line
+        curl += "polyline(" + line + ")"
         # call the API
         response = requests.get(curl).json()
 
