@@ -5,6 +5,7 @@ import urllib
 import os
 from geopy.geocoders import Nominatim
 import time
+import polyline
 ##import googlemaps
 ##import osrm
 
@@ -164,6 +165,7 @@ class Window(tk.Frame):
         # print(num_pages)
 
         counter = num_pages
+        print("Num Pages: " + str(num_pages))
 
         outString = ""
 
@@ -178,7 +180,8 @@ class Window(tk.Frame):
         counter = 5
 
         for i in range(counter):
-            query = 'https://www.yelp.com/search?find_desc='+search+'&find_loc='+location+'&start='+str(i)
+            print("Page: " + str(i))
+            query = 'https://www.yelp.com/search?find_desc='+search+'&find_loc='+location+'&start='+str(i * 10)
 
             response = requests.get(query)
             html = response.content
@@ -324,7 +327,7 @@ class Window(tk.Frame):
                     latLong.append((loc.latitude, loc.longitude))
                     reverseLongLat.append((loc.longitude, loc.latitude))
 
-        print(latLong)
+        print(reverseLongLat)
         # add the coordinates to our requests curl string so we can use them in the API hit
         for x in range(len(reverseLongLat)):
             pair = reverseLongLat[x]
@@ -333,8 +336,12 @@ class Window(tk.Frame):
             else:
                 locationCoordinates += str(pair[0]) + "," + str(pair[1])
 
+        line = polyline.encode(reverseLongLat, 10)
+        print("Encoded: " + line)
+
+        print("Decoded: " + str(polyline.decode(line, 10)))
         # update the curl string
-        curl += locationCoordinates
+        curl += line
         # call the API
         response = requests.get(curl).json()
 
