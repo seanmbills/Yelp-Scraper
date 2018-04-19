@@ -3,14 +3,14 @@ This python application is intended to scrape the Yelp website for the results l
 
 
 TO DO:  
-    1) Find out why the search/scrape for places is duplicating some locations.  
+    1. Find out why the search/scrape for places is duplicating some locations.  
     - a) Fix this functionality.  
       - NOTE: seems to be iterating through the same page's results over and over again.  
-    2) Add in a fix to allow a user to choose a start location.  
+    2. Add in a fix to allow a user to choose a start location.  
     - a) Then implement the OSRM Trip functionality to allow for trips of specified number of stops.  
     - b) Also add in way for user to specify number of stops they want to make.  
       - i) Make sure to include default max/None if not specified.  
-    3) Should look into making a Location object/class so that I can clean up the code related to individual locations instead of making such a cluttered mess everywhere.  
+    3. Should look into making a Location object/class so that I can clean up the code related to individual locations instead of making such a cluttered mess everywhere.  
     - a) Would allow me to instead track a list of Locations instead of a list of tuples with tons of information.  
     4) Fix the output on the GUI screen.  
        - a) Namely, fix tabbing/spacing issues.  
