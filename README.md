@@ -20,4 +20,8 @@ TO DO:
     7) Need to revisit the efficiencies of the overall order in which things occur. Doesn't necessarily make sense to generate all of these lists and then run analysis on the entirety of the list after its generation. Probably makes more sense to get the coordinates of items as they're scraped from the page, as this should cut down on run-time. 
         a) Consider moving the geopy (or other) API calls to when the information is generated from the scraping to avoid running geopy on the entirety of the list later, causing bad run-time.
         b) Currently has an absolutely terrible runtime with larger datasets (aka hundreds of addresses to generate coordinates for).
+        c) Potential Fix: don't even add locations to the list if they don't contain the targeted search city. This should serve to cut down on many of the offending locations that cause the run time to increase.
+    8) Should try to declutter the main "search" method. Right now the majority of code is here and makes for a bit of a mess.
+        a) Try to break things out into separate files if possible.
+        b) Try to at least break things out into separate methods to clean up code and allow for better readability.
 

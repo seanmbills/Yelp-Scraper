@@ -154,24 +154,31 @@ class Window(tk.Frame):
 
         soup = BeautifulSoup(html)
         
-
+        ### this block of code doesn't necessarily seem necessary/relevant anymore
         total_results = soup.find('span', attrs={'class': 'pagination-results-window'}).text
         index_results = total_results.find("of")
         num_results = int(total_results[index_results + 3:])
+        ###
 
+        ### could probably pass the "soup" var into a method that handles this to reduce clutter
         pagination_pages = soup.find('div', attrs={'class': 'page-of-pages arrange_unit arrange_unit--fill'}).text
         index_of = pagination_pages.find("of")
         num_pages = int(pagination_pages[index_of + 3:])
+        ###
         # print(num_pages)
 
         counter = num_pages
-        print("Num Pages: " + str(num_pages))
+        # print("Num Pages: " + str(num_pages))
 
         outString = ""
 
         numResults = 0
 
+        ### probably don't need to write everything to an html file now that I have it outputting
+        ### to the GUI appropriately...unless I want to include an html map of sorts to show
+        ### to the user after they run the script
         write_file = open('query_results.html', 'w')
+        ###
 
         # locationList = {}
         locationList = []
@@ -188,6 +195,9 @@ class Window(tk.Frame):
 
             soup = BeautifulSoup(html)
 
+            ### could definitely pass all of this into another method that then creates a new
+            ### "Business" or "Location" class object (would need a separate file for this)
+            ### that gets returned here instead and gets added to a list of similar objects
             list = soup.findAll('li', attrs={'class': 'regular-search-result'})
             
             if len(list) != 0 and list is not None:
@@ -220,8 +230,9 @@ class Window(tk.Frame):
                     rating_comparator = self.compareRatings(rating, ratingNumber)
 
                     currentIterationPrice = self.calculatePrice(currPrice)
-                    
+            ### end of creation of Business/Location entity        
 
+            ### very complicated/unwieldy if statement check...look into reducing this/handling it elsewhere
                     if name is not None and address is not None and number is not None and currPrice is not None and currentIterationPrice <= price_comparator and currRating is not None and rating_comparator is True:
                         city_name_location = address.find(city_name)
 
@@ -245,16 +256,23 @@ class Window(tk.Frame):
                         address = address[:city_name_location] + "\n\t\t\t\t " + address[city_name_location:]
                         outString += "Name: " + name.replace("&amp;", "") + "\n\t\t\tAddress: " + modified_address + "\n\t\t\tPhone Number: " + number + "\n"
                         outString = outString.replace("&amp;", "&")
+                        ### again, not sure it's necessary to write everything to HTML at the current time...
+                        ### simply makes it complicated to push to Git and adds in an unnecessary step
                         write_file.write("Name: " + name.replace(u"\u2019", "'").replace("&amp;", "&").replace(u"\u2018", "'") + "</br>" + "Address: "
                             + address.replace(u"\u2019", "'").replace(u"\u2018", "'") + "</br>" + "Phone Number: "
                             + number.replace(u"\u2019", "'").replace(u"\u2018", "'") + "</br>")
-
+                        ###
                         numResults += 1
 
-        print(locationList)
+        # print(locationList)
 
         ## calculate the distance matrix for all locations using GoogleMaps API
+        ### need to look into including the geopy calculations here above
+        ### when I create the Business/Location entity and store them as variables there
+        ### to hopefully cut down on time complexity...running geopy seems to be the most time
+        ### intensive step of everything outside of scraping dozens of pages
         self.getDistanceMatrix(locationList)
+        ###
 
         write_file.close()
         totalPlace = 0
@@ -272,6 +290,7 @@ class Window(tk.Frame):
         # write th results to the output text location on the frame as well
         self.outputText.insert('end', self.v.get())
 
+    ### add in appropriate comments
     def compareRatings(self, baseRating, currentRating):
         minRating = 0.0
         if baseRating == u"\u2605":
@@ -290,6 +309,7 @@ class Window(tk.Frame):
         else:
             return False
 
+    ### add in appropriate comments
     def checkStates(self, location):
         state_names = ["Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming"]
         if location in state_names:
@@ -297,6 +317,7 @@ class Window(tk.Frame):
         else:
             return False
 
+    ### add in appropriate comments
     def calculatePrice(self, price):
         if price == "$":
             return 1
@@ -307,7 +328,9 @@ class Window(tk.Frame):
         elif price == "$$$$":
             return 4
 
-
+    ### add in appropriate comments
+    ### consider pulling the meat of this method out to its own method where it calculates
+    ### coordinates of a location as the location is scraped/generated instead of after the fact
     def getDistanceMatrix(self, locations):
         # instantiate geocoder entity
         geo = Nominatim(timeout=None)
@@ -319,6 +342,9 @@ class Window(tk.Frame):
         # iterate through all of the locations we've found in the scraping elsewhere
         for location in locations:
             # print("Location: " + location[1])
+            ### consider moving this up to the main search method so that it gets run as soon
+            ### as an element is scraped/generated instead of running after the list is generated
+            ### to save steps
             loc = geo.geocode(location[1])
             time.sleep(1)
             if loc is not None:
@@ -341,6 +367,10 @@ class Window(tk.Frame):
         curl += "polyline(" + line + ")"
         # call the API
         response = requests.get(curl).json()
+
+        ### now need to do calculations with the response json and find the appropriate
+        ### paths to follow to hit all locations (unless a # of steps is specified once that
+        ### feature is officially added in to the GUI)
 
         print(response)
         
