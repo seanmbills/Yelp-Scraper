@@ -177,7 +177,7 @@ class Window(tk.Frame):
         locationList = []
 
         ### DELETE THIS LATER!!!! ONLY ADDED THIS TO REDUCE SCRAPING TIME FOR DEBUGGING
-        counter = 5
+        counter = 15
 
         for i in range(counter):
             print("Page: " + str(i))

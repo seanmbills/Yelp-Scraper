@@ -16,4 +16,8 @@ TO DO:
         a) Namely, fix tabbing/spacing issues.
         b) Also need to look into turning this into a list of selectable items somehow. Again, might be easier if using a Location class.
     5) Create a .exe/executable file using either pyInstaller or py2exe (whichever will work appropriately).
+    6) Look into finding a better API to replace the geopy one currently in use as it seems to be struggling to identify quite a few of the addresses given to it.
+    7) Need to revisit the efficiencies of the overall order in which things occur. Doesn't necessarily make sense to generate all of these lists and then run analysis on the entirety of the list after its generation. Probably makes more sense to get the coordinates of items as they're scraped from the page, as this should cut down on run-time. 
+        a) Consider moving the geopy (or other) API calls to when the information is generated from the scraping to avoid running geopy on the entirety of the list later, causing bad run-time.
+        b) Currently has an absolutely terrible runtime with larger datasets (aka hundreds of addresses to generate coordinates for).
 
