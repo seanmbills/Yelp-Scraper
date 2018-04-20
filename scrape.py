@@ -6,6 +6,7 @@ import os
 from geopy.geocoders import Nominatim
 import time
 import polyline
+import Business
 ##import googlemaps
 ##import osrm
 
@@ -16,6 +17,7 @@ except ImportError:
     import tkinter as tk
     from bs4 import BeautifulSoup
 
+geo = Nominatim(timeout=None)
 
 class Window(tk.Frame):
     def __init__(self, parent):
@@ -129,166 +131,82 @@ class Window(tk.Frame):
         location = locationQuery
 
         query = 'https://www.yelp.com/search?find_desc='+search+'&find_loc='+location+'&start='+str(0)
-
-        response = requests.get(query)
-        ##print(response)
-        html = response.content
-        ##print(html)
-        # print(response)
-        html = response.content
-        # print(html)
         
+        soup = self.getBeautifulSoupResponse(query)
+        num_pages = self.getNumPages(soup)
+        outString = ""
+        numResults = 0
+        ### probably don't need to write everything to an html file now that I have it outputting
+        ### to the GUI appropriately...unless I want to include an html map of sorts to show
+        ### to the user after they run the script
+        # write_file = open('query_results.html', 'w')
+        ###
+        self.businessList = []
+        self.coordinates = []
+        ### DELETE THIS LATER!!!! ONLY ADDED THIS TO REDUCE SCRAPING TIME FOR DEBUGGING
+        num_pages = 3
+
+        for i in range(num_pages):
+            print("Page: " + str(i))
+            query = 'https://www.yelp.com/search?find_desc='+search+'&find_loc='+location+'&start='+str(i * 10)
+            soup = self.getBeautifulSoupResponse(query)
+            self.generateBusinesses(soup, location, rating, price)
+        # print(businessList)
+        print(self.coordinates)
+
+        self.getDistanceMatrix()
+
+        # write_file.close()
+        print("Location list size: " + str(len(self.businessList)))
+        for bus in self.businessList:
+            outString += bus.toString()
+        self.setText(outString)
+        # write the results to the output text location on the frame as well
+        self.outputText.insert('end', self.v.get())
+
+    
+
+    ### add in appropriate comments
+    def checkStates(self, location):
+        state_names = ["Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming"]
+        if location in state_names:
+            return True
+        else:
+            return False
+
+    def getCityName(self, location):
         updated_location = ", ".join(w.capitalize() for w in location.split(", "))
         ##print(updated_location)
         if updated_location.find(",") != -1:
             city_name = updated_location[:updated_location.find(",")]
             state_name = updated_location[updated_location.find(",") + 2:]
         else:
-            city_name = updated_location #[:updated_location.find(",")]
-            ##print(self.checkStates(city_name))
+            city_name = updated_location
 
-        ## convert price $$$ numbers into actual numbers for comparison below  
-        # print(price)      
-        price_comparator = self.calculatePrice(price)
+        return city_name
 
-
+    def getBeautifulSoupResponse(self, query):
+        response = requests.get(query)
+        html = response.content
         soup = BeautifulSoup(html)
-        
-        ### this block of code doesn't necessarily seem necessary/relevant anymore
-        total_results = soup.find('span', attrs={'class': 'pagination-results-window'}).text
-        index_results = total_results.find("of")
-        num_results = int(total_results[index_results + 3:])
-        ###
+        return soup
 
-        ### could probably pass the "soup" var into a method that handles this to reduce clutter
-        pagination_pages = soup.find('div', attrs={'class': 'page-of-pages arrange_unit arrange_unit--fill'}).text
+    def getNumPages(self, soupObject):
+        pagination_pages = soupObject.find('div', attrs={'class': 'page-of-pages arrange_unit arrange_unit--fill'}).text
         index_of = pagination_pages.find("of")
         num_pages = int(pagination_pages[index_of + 3:])
-        ###
-        # print(num_pages)
+        return num_pages
 
-        counter = num_pages
-        # print("Num Pages: " + str(num_pages))
-
-        outString = ""
-
-        numResults = 0
-
-        ### probably don't need to write everything to an html file now that I have it outputting
-        ### to the GUI appropriately...unless I want to include an html map of sorts to show
-        ### to the user after they run the script
-        write_file = open('query_results.html', 'w')
-        ###
-
-        # locationList = {}
-        locationList = []
-
-        ### DELETE THIS LATER!!!! ONLY ADDED THIS TO REDUCE SCRAPING TIME FOR DEBUGGING
-        counter = 15
-
-        for i in range(counter):
-            print("Page: " + str(i))
-            query = 'https://www.yelp.com/search?find_desc='+search+'&find_loc='+location+'&start='+str(i * 10)
-
-            response = requests.get(query)
-            html = response.content
-
-            soup = BeautifulSoup(html)
-
-            ### could definitely pass all of this into another method that then creates a new
-            ### "Business" or "Location" class object (would need a separate file for this)
-            ### that gets returned here instead and gets added to a list of similar objects
-            list = soup.findAll('li', attrs={'class': 'regular-search-result'})
-            
-            if len(list) != 0 and list is not None:
-                for item in list:
-                    name = item.find('a', attrs={'class': 'biz-name js-analytics-click'})
-                    if name is not None:
-                        name = name.text
-                        ##print("Name: " + name)
-                        name.replace(u"\u2019", "'").replace("amp;", "").replace(u"\u2018", "'")
-                    address = item.find('address')
-                    if address is not None:
-                        address = address.text
-                    number = item.find('span', attrs={'class': 'biz-phone'})
-                    if number is not None:
-                        number = number.text
-                    currPrice = item.find('span', attrs={'class': 'business-attribute price-range'})
-                    if currPrice is not None:
-                        currPrice = currPrice.text
-                    
-                    currRating = item.find('img', attrs={'class': 'offscreen'})
-
-
-                    ratingNumber = 0
-                    if currRating is not None:
-                        currRating = currRating['alt']
-                        ##currRating = currRating.encode('ascii')
-                        index_decimal = currRating.find(".")
-                        ratingNumber = float(currRating[index_decimal - 1 : index_decimal + 2])
-
-                    rating_comparator = self.compareRatings(rating, ratingNumber)
-
-                    currentIterationPrice = self.calculatePrice(currPrice)
-            ### end of creation of Business/Location entity        
-
-            ### very complicated/unwieldy if statement check...look into reducing this/handling it elsewhere
-                    if name is not None and address is not None and number is not None and currPrice is not None and currentIterationPrice <= price_comparator and currRating is not None and rating_comparator is True:
-                        city_name_location = address.find(city_name)
-
-                        name = str(name.replace(u"\u2019", "'").replace("&amp;", "&").replace(u"\u2018", "'"))
-                        address = str(address.replace(u"\u2019", "'").replace(u"\u2018", "'"))
-                        number = str(number.replace(u"\u2019", "'").replace(u"\u2018", "'"))
-
-                        # if name in locationList.keys():
-                        #     locationList[name].append((address, number, currPrice, ratingNumber))
-                        # else:
-                        #     locationList[name] = [(address, number, currPrice, ratingNumber)]
-                        modified_address = address[:city_name_location] + " " + address[city_name_location:]
-                        
-                        # modify the collected information to not include white spaces
-                        modified_address = modified_address.replace("\n", "").strip()
-                        name = name.strip().replace("\n", "")
-                        number = number.strip().replace("\n", "")
-                        
-                        locationList.append((name, modified_address))
-                        
-                        address = address[:city_name_location] + "\n\t\t\t\t " + address[city_name_location:]
-                        outString += "Name: " + name.replace("&amp;", "") + "\n\t\t\tAddress: " + modified_address + "\n\t\t\tPhone Number: " + number + "\n"
-                        outString = outString.replace("&amp;", "&")
-                        ### again, not sure it's necessary to write everything to HTML at the current time...
-                        ### simply makes it complicated to push to Git and adds in an unnecessary step
-                        write_file.write("Name: " + name.replace(u"\u2019", "'").replace("&amp;", "&").replace(u"\u2018", "'") + "</br>" + "Address: "
-                            + address.replace(u"\u2019", "'").replace(u"\u2018", "'") + "</br>" + "Phone Number: "
-                            + number.replace(u"\u2019", "'").replace(u"\u2018", "'") + "</br>")
-                        ###
-                        numResults += 1
-
-        # print(locationList)
-
-        ## calculate the distance matrix for all locations using GoogleMaps API
-        ### need to look into including the geopy calculations here above
-        ### when I create the Business/Location entity and store them as variables there
-        ### to hopefully cut down on time complexity...running geopy seems to be the most time
-        ### intensive step of everything outside of scraping dozens of pages
-        self.getDistanceMatrix(locationList)
-        ###
-
-        write_file.close()
-        totalPlace = 0
-        for name in locationList:
-            ##print(name)
-            # for locations in locationList[name]:
-                ##print(locations)
-                totalPlace += 1
-        print("Location list size: " + str(totalPlace))
-        # print("Output: " + outString)
-
-        # print("Total Results: " + str(total_results))
-
-        self.setText(outString)
-        # write th results to the output text location on the frame as well
-        self.outputText.insert('end', self.v.get())
+    ### add in appropriate comments
+    def calculatePrice(self, price):
+        if price == "$":
+            return 1
+        elif price == "$$":
+            return 2
+        elif price == "$$$":
+            return 3
+        elif price == "$$$$":
+            return 4
 
     ### add in appropriate comments
     def compareRatings(self, baseRating, currentRating):
@@ -309,63 +227,96 @@ class Window(tk.Frame):
         else:
             return False
 
-    ### add in appropriate comments
-    def checkStates(self, location):
-        state_names = ["Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming"]
-        if location in state_names:
-            return True
-        else:
-            return False
+    def generateBusinesses(self, soup, location, rating, price):
+        list = soup.findAll('li', attrs={'class': 'regular-search-result'})
+        price_comparator = self.calculatePrice(price)
+        # businesses = []
+        # coordinates = []
+        if len(list) != 0 and list is not None:
+            for item in list:
+                name = self.getListItemName(item)
+                address = self.getListItemAddress(item)
+                number = self.getListItemNumber(item)
+                currPrice = self.getListItemPrice(item)
+                currRating = self.getListItemRating(item)
 
-    ### add in appropriate comments
-    def calculatePrice(self, price):
-        if price == "$":
-            return 1
-        elif price == "$$":
-            return 2
-        elif price == "$$$":
-            return 3
-        elif price == "$$$$":
-            return 4
+                rating_comparator = self.compareRatings(rating, currRating)
+                currentIterationPrice = self.calculatePrice(currPrice)
+        ### very complicated/unwieldy if statement check...look into reducing this/handling it elsewhere
+                if name is not None and address is not None and number is not None and currPrice is not None and currentIterationPrice <= price_comparator and currRating is not None and rating_comparator is True:
+                    city_name = self.getCityName(location)
+                    city_name_location = address.find(city_name)
+                    if city_name_location != -1:
+                        modified_address = address[:city_name_location] + " " + address[city_name_location:]
+                        
+                        ## get the lat/long coordinates associated with this address (if they exist)                        
+                        response = self.getCoordinates(modified_address)
+                        ## then create a new business entity from all of this information
+                        if response[0] is not None and response[1] is not None:
+                            self.coordinates.append(response)
+                            business = Business.Business(name, number, address, city_name_location, rating, currentIterationPrice, response[0], response[1])
+                            ## then append the business to our list of businesses
+                            self.businessList.append(business)
+                            ### again, not sure it's necessary to write everything to HTML at the current time...
+                            ### simply makes it complicated to push to Git and adds in an unnecessary step
+                            # write_file.write("Name: " + name.replace(u"\u2019", "'").replace("&amp;", "&").replace(u"\u2018", "'") + "</br>" + "Address: "
+                            #     + address.replace(u"\u2019", "'").replace(u"\u2018", "'") + "</br>" + "Phone Number: "
+                            #     + number.replace(u"\u2019", "'").replace(u"\u2018", "'") + "</br>")
+                            ###
+
+
+    def getCoordinates(self, address):
+        geocoded = geo.geocode(address)
+        if geocoded is not None:
+            return (geocoded.latitude, geocoded.longitude)
+        else:
+            return (None, None)
+
+    def getListItemName(self, item):
+        name = item.find('a', attrs={'class': 'biz-name js-analytics-click'})
+        if name is not None:
+            name = name.text
+            ##print("Name: " + name)
+            name.replace(u"\u2019", "'").replace("amp;", "").replace(u"\u2018", "'")
+        return name
+
+    def getListItemAddress(self, item):
+        address = item.find('address')
+        if address is not None:
+            address = address.text
+        return address
+
+    def getListItemNumber(self, item):
+        number = item.find('span', attrs={'class': 'biz-phone'})
+        if number is not None:
+            number = number.text
+        return number
+
+    def getListItemPrice(self, item):
+        currPrice = item.find('span', attrs={'class': 'business-attribute price-range'})
+        if currPrice is not None:
+            currPrice = currPrice.text
+        return currPrice
+
+    def getListItemRating(self, item):
+        currRating = item.find('img', attrs={'class': 'offscreen'})
+        ratingNumber = 0
+        if currRating is not None:
+            currRating = currRating['alt']
+            ##currRating = currRating.encode('ascii')
+            index_decimal = currRating.find(".")
+            ratingNumber = float(currRating[index_decimal - 1 : index_decimal + 2])
+        return ratingNumber
+
 
     ### add in appropriate comments
     ### consider pulling the meat of this method out to its own method where it calculates
     ### coordinates of a location as the location is scraped/generated instead of after the fact
-    def getDistanceMatrix(self, locations):
+    def getDistanceMatrix(self):
         # instantiate geocoder entity
-        geo = Nominatim(timeout=None)
-
         curl = 'http://router.project-osrm.org/table/v1/walking/'
-        locationCoordinates = ""
-        latLong = []
-        reverseLongLat = []
-        # iterate through all of the locations we've found in the scraping elsewhere
-        for location in locations:
-            # print("Location: " + location[1])
-            ### consider moving this up to the main search method so that it gets run as soon
-            ### as an element is scraped/generated instead of running after the list is generated
-            ### to save steps
-            loc = geo.geocode(location[1])
-            time.sleep(1)
-            if loc is not None:
-                # print("Coordinates: " + str(loc.latitude) + ", " + str(loc.longitude))
-                if (loc.latitude, loc.longitude) not in latLong:
-                    latLong.append((loc.latitude, loc.longitude))
-                    reverseLongLat.append((loc.longitude, loc.latitude))
-
-        # add the coordinates to our requests curl string so we can use them in the API hit
-        # for x in range(len(reverseLongLat)):
-        #     pair = reverseLongLat[x]
-        #     if x != (len(reverseLongLat) - 1):
-        #         locationCoordinates += str(pair[0]) + "," + str(pair[1]) + ";"
-        #     else:
-        #         locationCoordinates += str(pair[0]) + "," + str(pair[1])
-
-        line = polyline.encode(latLong, 5)
-
-        # update the curl string
+        line = polyline.encode(self.coordinates, 5)
         curl += "polyline(" + line + ")"
-        # call the API
         response = requests.get(curl).json()
 
         ### now need to do calculations with the response json and find the appropriate
@@ -374,6 +325,11 @@ class Window(tk.Frame):
 
         print(response)
         
+
+
+
+
+
 
 
 def center(win):
